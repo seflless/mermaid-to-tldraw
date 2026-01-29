@@ -1,0 +1,23 @@
+README.md
+  b2b11d3f79d55d45 1-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.37",
+  "base_commit_sha": "dc95a4aa3398d7c0ad72a0a89f6012b1aea03a6e",
+  "prompts": {
+    "b2b11d3f79d55d45": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "22bf2e7c-33ee-4202-af9a-8a296a763192",
+        "model": "claude-opus-4-5-20251101"
+      },
+      "human_author": "Francois Laberge <francoislaberge@gmail.com>",
+      "messages": [],
+      "total_additions": 34,
+      "total_deletions": 0,
+      "accepted_lines": 34,
+      "overriden_lines": 0
+    }
+  }
+}
