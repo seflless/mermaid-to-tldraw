@@ -1,0 +1,23 @@
+apps/demo/src/MermaidShape.tsx
+  b628e1ccb2d26eb2 16,21,34-38,50-57,59-64,67,69,74,82,85,88-89,97,104,111,121,127-136,138-148,152-367,369-396,449-450,452-454,457,470
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.37",
+  "base_commit_sha": "68bf1488744e1fecf097cf395cde018bc90afeb8",
+  "prompts": {
+    "b628e1ccb2d26eb2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e70f77b3-cc05-4e6d-96bf-c98f0341a4df",
+        "model": "claude-opus-4-5-20251101"
+      },
+      "human_author": "Francois Laberge <francoislaberge@gmail.com>",
+      "messages": [],
+      "total_additions": 374,
+      "total_deletions": 90,
+      "accepted_lines": 306,
+      "overriden_lines": 0
+    }
+  }
+}
