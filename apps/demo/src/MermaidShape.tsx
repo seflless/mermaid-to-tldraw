@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   HTMLContainer,
   TLBaseShape,
@@ -8,32 +8,34 @@ import {
 } from 'tldraw'
 import mermaid from 'mermaid'
 
-// Initialize mermaid with minimal config - we'll style via CSS
+// Initialize mermaid with TLDraw-like config
 mermaid.initialize({
   startOnLoad: false,
   theme: 'base',
   themeVariables: {
-    primaryColor: '#f9f9f9',
+    primaryColor: '#fdfdfd',
     primaryTextColor: '#1d1d1d',
     primaryBorderColor: '#1d1d1d',
     lineColor: '#1d1d1d',
     textColor: '#1d1d1d',
-    mainBkg: '#f9f9f9',
+    mainBkg: '#fdfdfd',
     nodeBorder: '#1d1d1d',
-    edgeLabelBackground: 'transparent',
+    edgeLabelBackground: '#ffffff',
     clusterBkg: '#f5f5f5',
     clusterBorder: '#1d1d1d',
   },
   flowchart: {
     curve: 'basis',
     padding: 20,
+    htmlLabels: true,
   },
 })
 
 // CSS to make Mermaid look like TLDraw
 const TLDRAW_MERMAID_CSS = `
-  /* Use TLDraw's hand-drawn font */
-  @import url('https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;500&display=swap');
+  .mermaid-tldraw {
+    font-family: 'Shantell Sans', cursive !important;
+  }
 
   .mermaid-tldraw * {
     font-family: 'Shantell Sans', cursive !important;
@@ -47,37 +49,66 @@ const TLDRAW_MERMAID_CSS = `
   .mermaid-tldraw .node path {
     stroke-width: 2.5px !important;
     stroke: #1d1d1d !important;
+    fill: #fdfdfd !important;
   }
 
   /* Arrow/edge styling */
   .mermaid-tldraw .edgePath path.path {
-    stroke-width: 2px !important;
+    stroke-width: 1.5px !important;
     stroke: #1d1d1d !important;
   }
 
-  /* Arrowhead styling */
+  /* Arrowhead styling - make it look more like TLDraw's V arrows */
   .mermaid-tldraw marker path {
-    fill: #1d1d1d !important;
+    fill: none !important;
     stroke: #1d1d1d !important;
+    stroke-width: 1.5px !important;
   }
 
-  /* Diamond shapes */
-  .mermaid-tldraw .node .label-container {
+  /* Diamond/rhombus shapes */
+  .mermaid-tldraw .node.rhombus polygon,
+  .mermaid-tldraw .node polygon {
     stroke-width: 2.5px !important;
   }
 
   /* Text styling */
   .mermaid-tldraw .nodeLabel,
-  .mermaid-tldraw .edgeLabel,
   .mermaid-tldraw .label {
-    font-size: 16px !important;
+    font-size: 18px !important;
     fill: #1d1d1d !important;
+    font-family: 'Shantell Sans', cursive !important;
   }
 
-  /* Edge labels */
+  /* Edge labels - white background to mask the line */
+  .mermaid-tldraw .edgeLabel {
+    font-size: 16px !important;
+    font-family: 'Shantell Sans', cursive !important;
+  }
+
   .mermaid-tldraw .edgeLabel rect {
-    fill: white !important;
-    opacity: 0.9;
+    fill: #ffffff !important;
+    stroke: #ffffff !important;
+    stroke-width: 4px !important;
+    opacity: 1 !important;
+  }
+
+  .mermaid-tldraw .edgeLabel span {
+    color: #1d1d1d !important;
+    background: transparent !important;
+  }
+
+  /* Foreign object text containers */
+  .mermaid-tldraw foreignObject {
+    overflow: visible !important;
+  }
+
+  .mermaid-tldraw foreignObject div {
+    font-family: 'Shantell Sans', cursive !important;
+  }
+
+  /* SVG text elements */
+  .mermaid-tldraw text {
+    font-family: 'Shantell Sans', cursive !important;
   }
 `
 
@@ -125,6 +156,8 @@ export class MermaidShapeUtil extends BaseBoxShapeUtil<MermaidShape> {
 function MermaidRenderer({ shape }: { shape: MermaidShape }) {
   const [svg, setSvg] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
+  const [svgSize, setSvgSize] = useState<{ width: number; height: number } | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -134,6 +167,21 @@ function MermaidRenderer({ shape }: { shape: MermaidShape }) {
         const id = `mermaid-${shape.id.replace(/[^a-zA-Z0-9]/g, '')}`
         const { svg } = await mermaid.render(id, shape.props.source)
         if (!cancelled) {
+          // Extract dimensions from SVG
+          const parser = new DOMParser()
+          const doc = parser.parseFromString(svg, 'image/svg+xml')
+          const svgEl = doc.querySelector('svg')
+          if (svgEl) {
+            const viewBox = svgEl.getAttribute('viewBox')
+            if (viewBox) {
+              const [, , w, h] = viewBox.split(' ').map(Number)
+              setSvgSize({ width: w, height: h })
+            } else {
+              const w = parseFloat(svgEl.getAttribute('width') || '400')
+              const h = parseFloat(svgEl.getAttribute('height') || '300')
+              setSvgSize({ width: w, height: h })
+            }
+          }
           setSvg(svg)
           setError(null)
         }
@@ -148,6 +196,15 @@ function MermaidRenderer({ shape }: { shape: MermaidShape }) {
     render()
     return () => { cancelled = true }
   }, [shape.props.source, shape.id])
+
+  // Calculate scale to fit
+  const scale = svgSize
+    ? Math.min(
+        (shape.props.w - 20) / svgSize.width,
+        (shape.props.h - 20) / svgSize.height,
+        1 // Don't scale up beyond 1
+      )
+    : 1
 
   return (
     <HTMLContainer
@@ -169,14 +226,12 @@ function MermaidRenderer({ shape }: { shape: MermaidShape }) {
         </div>
       ) : (
         <div
+          ref={containerRef}
           className="mermaid-tldraw"
           dangerouslySetInnerHTML={{ __html: svg }}
           style={{
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            transform: `scale(${scale})`,
+            transformOrigin: 'center center',
           }}
         />
       )}
