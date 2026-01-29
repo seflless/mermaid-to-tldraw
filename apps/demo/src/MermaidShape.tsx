@@ -32,9 +32,9 @@ mermaid.initialize({
 })
 
 // TLDraw arrow parameters
-const ARROW_HEAD_LENGTH = 12  // Length of arrowhead lines
-const ARROW_HEAD_ANGLE = 25  // Angle in degrees
-const MIN_ARROW_HEAD_LENGTH = 6  // Minimum when arrows are short
+const ARROW_HEAD_LENGTH = 14  // Length of arrowhead lines
+const ARROW_HEAD_ANGLE = 35  // Angle in degrees (wider V)
+const MIN_ARROW_HEAD_LENGTH = 8  // Minimum when arrows are short
 
 // CSS to make Mermaid look like TLDraw
 const TLDRAW_MERMAID_CSS = `
@@ -46,9 +46,9 @@ const TLDRAW_MERMAID_CSS = `
     font-family: 'Shantell Sans', cursive !important;
   }
 
-  /* Thicker strokes like TLDraw */
+  /* Node styling - TLDraw look */
   .mermaid-tldraw .node rect {
-    stroke-width: 3.5px !important;
+    stroke-width: 2.5px !important;
     stroke: #1d1d1d !important;
     fill: #f9f9f9 !important;
     rx: 12px !important;
@@ -57,20 +57,24 @@ const TLDRAW_MERMAID_CSS = `
 
   .mermaid-tldraw .node circle,
   .mermaid-tldraw .node ellipse {
-    stroke-width: 3.5px !important;
+    stroke-width: 2.5px !important;
     stroke: #1d1d1d !important;
     fill: #f9f9f9 !important;
   }
 
   .mermaid-tldraw .node polygon,
   .mermaid-tldraw .node path {
-    stroke-width: 3.5px !important;
+    stroke-width: 2.5px !important;
     stroke: #1d1d1d !important;
     fill: #f9f9f9 !important;
   }
 
   /* Arrow/edge styling */
-  .mermaid-tldraw .edgePath path.path {
+  .mermaid-tldraw .edgePath path.path,
+  .mermaid-tldraw .edgePath path,
+  .mermaid-tldraw path.flowchart-link,
+  .mermaid-tldraw .edge-pattern-solid,
+  .mermaid-tldraw [class*="edge"] path {
     stroke-width: 2px !important;
     stroke: #1d1d1d !important;
   }
@@ -82,13 +86,37 @@ const TLDRAW_MERMAID_CSS = `
     stroke-width: 3.5px !important;
   }
 
-  /* Text styling - bolder */
+  /* Text styling - bolder and centered */
   .mermaid-tldraw .nodeLabel,
   .mermaid-tldraw .label {
     font-size: 20px !important;
     font-weight: 500 !important;
     fill: #1d1d1d !important;
     font-family: 'Shantell Sans', cursive !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  .mermaid-tldraw .node .label-container {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .mermaid-tldraw .label foreignObject {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .mermaid-tldraw .label foreignObject > div {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
   }
 
   /* Edge labels - white background to mask the line */
@@ -111,7 +139,7 @@ const TLDRAW_MERMAID_CSS = `
     font-weight: 500 !important;
   }
 
-  /* Foreign object text containers */
+  /* Foreign object text containers - fix centering */
   .mermaid-tldraw foreignObject {
     overflow: visible !important;
   }
@@ -119,12 +147,27 @@ const TLDRAW_MERMAID_CSS = `
   .mermaid-tldraw foreignObject div {
     font-family: 'Shantell Sans', cursive !important;
     font-weight: 500 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .mermaid-tldraw .nodeLabel {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
   }
 
   /* SVG text elements */
   .mermaid-tldraw text {
     font-family: 'Shantell Sans', cursive !important;
     font-weight: 500 !important;
+    text-anchor: middle !important;
+    dominant-baseline: central !important;
   }
 
   /* Custom V arrowheads */
@@ -178,32 +221,53 @@ function postProcessSvg(svgString: string): string {
   // Get ALL edge paths - the .edgePath elements contain the arrow paths
   const edgePathGroups = svg.querySelectorAll('.edgePath')
 
-  edgePathGroups.forEach((group) => {
-    // Find all paths in this edge group
-    const paths = group.querySelectorAll('path')
+  // Also try other selectors as fallback
+  const flowchartLinks = svg.querySelectorAll('path.flowchart-link')
 
-    paths.forEach(path => {
-      // Remove ALL marker-related attributes
-      path.removeAttribute('marker-end')
-      path.removeAttribute('marker-start')
-      path.removeAttribute('marker-mid')
+  // If no edgePaths, try flowchart links
+  const pathsToUse = edgePathGroups.length > 0 ? edgePathGroups : flowchartLinks
 
-      // Clean style attribute
-      const style = path.getAttribute('style')
+  pathsToUse.forEach((element) => {
+
+    // Handle both group elements and direct path elements
+    let mainPath: Element | null = null
+
+    if (element.tagName.toLowerCase() === 'path') {
+      // It's a path directly
+      mainPath = element
+    } else {
+      // It's a group - find paths inside
+      const paths = element.querySelectorAll('path')
+      paths.forEach(path => {
+        path.removeAttribute('marker-end')
+        path.removeAttribute('marker-start')
+        path.removeAttribute('marker-mid')
+        const style = path.getAttribute('style')
+        if (style) {
+          path.setAttribute('style', style
+            .replace(/marker-end\s*:\s*[^;]+;?/gi, '')
+            .replace(/marker-start\s*:\s*[^;]+;?/gi, '')
+            .replace(/marker-mid\s*:\s*[^;]+;?/gi, ''))
+        }
+      })
+      mainPath = Array.from(paths).find(p => {
+        const d = p.getAttribute('d')
+        return d && d.length > 10
+      }) || null
+    }
+
+    // Remove markers from the main path too
+    if (mainPath) {
+      mainPath.removeAttribute('marker-end')
+      mainPath.removeAttribute('marker-start')
+      const style = mainPath.getAttribute('style')
       if (style) {
-        const cleanedStyle = style
+        mainPath.setAttribute('style', style
           .replace(/marker-end\s*:\s*[^;]+;?/gi, '')
           .replace(/marker-start\s*:\s*[^;]+;?/gi, '')
-          .replace(/marker-mid\s*:\s*[^;]+;?/gi, '')
-        path.setAttribute('style', cleanedStyle)
+          .replace(/marker-mid\s*:\s*[^;]+;?/gi, ''))
       }
-    })
-
-    // Get the main path (usually the one with a 'd' attribute that's not just a point)
-    const mainPath = Array.from(paths).find(p => {
-      const d = p.getAttribute('d')
-      return d && d.length > 10 // Has a real path, not just a marker
-    })
+    }
 
     if (!mainPath) return
 
