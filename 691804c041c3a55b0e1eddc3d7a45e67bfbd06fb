@@ -1,0 +1,25 @@
+packages/mermaid-to-tldraw/src/converter.ts
+  95e0d7aa1c7edc0e 81
+apps/demo/src/MermaidShape.tsx
+  95e0d7aa1c7edc0e 1,7,26,52,61,68,79,87-88,94,132-135,178,469,481,493-496,498-525,538,542,546-547,562-563,568-569,571-572,574-589,605,607
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.37",
+  "base_commit_sha": "691804c041c3a55b0e1eddc3d7a45e67bfbd06fb",
+  "prompts": {
+    "95e0d7aa1c7edc0e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "eecf66ba-876a-41e2-8ea3-99e2c7b57d33",
+        "model": "claude-opus-4-5-20251101"
+      },
+      "human_author": "Francois Laberge <francoislaberge@gmail.com>",
+      "messages": [],
+      "total_additions": 98,
+      "total_deletions": 41,
+      "accepted_lines": 82,
+      "overriden_lines": 0
+    }
+  }
+}
