@@ -78,7 +78,7 @@ export function convertToTldraw(
         verticalAlign: 'middle',
         size: 'm',
         font: 'draw',
-        fill: 'solid',
+        fill: 'semi',
         color: 'black',
       },
     })
