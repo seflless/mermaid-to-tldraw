@@ -1,0 +1,55 @@
+apps/demo/index.html
+  b628e1ccb2d26eb2 1-19
+.gitignore
+  b628e1ccb2d26eb2 1-5
+package.json
+  b628e1ccb2d26eb2 1-10,13
+pnpm-workspace.yaml
+  b628e1ccb2d26eb2 1-3
+apps/demo/src/main.tsx
+  b628e1ccb2d26eb2 1-9
+packages/mermaid-to-tldraw/src/layout.ts
+  b628e1ccb2d26eb2 1-67
+apps/demo/src/App.tsx
+  b628e1ccb2d26eb2 1-135
+packages/mermaid-to-tldraw/src/converter.ts
+  b628e1ccb2d26eb2 1-150,152-162,164-169
+apps/demo/tsconfig.json
+  b628e1ccb2d26eb2 1-20
+packages/mermaid-to-tldraw/package.json
+  b628e1ccb2d26eb2 1-29
+apps/demo/src/MermaidShape.tsx
+  b628e1ccb2d26eb2 2-119,122-155,158-179,181-241,245-267,269,271-431,433-556,558-588
+packages/mermaid-to-tldraw/src/parser.ts
+  b628e1ccb2d26eb2 1-201
+packages/mermaid-to-tldraw/tsconfig.json
+  b628e1ccb2d26eb2 1-15
+apps/demo/package.json
+  b628e1ccb2d26eb2 1-12,14-26
+packages/mermaid-to-tldraw/src/types.ts
+  b628e1ccb2d26eb2 1-63
+packages/mermaid-to-tldraw/src/index.ts
+  b628e1ccb2d26eb2 1-21
+apps/demo/vite.config.ts
+  b628e1ccb2d26eb2 1-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.38",
+  "base_commit_sha": "5647c6db06e2ee5e85831114d98384773b688fbe",
+  "prompts": {
+    "b628e1ccb2d26eb2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e70f77b3-cc05-4e6d-96bf-c98f0341a4df",
+        "model": "claude-opus-4-5-20251101"
+      },
+      "human_author": "Francois Laberge <francoislaberge@gmail.com>",
+      "messages": [],
+      "total_additions": 164,
+      "total_deletions": 100,
+      "accepted_lines": 1371,
+      "overriden_lines": 0
+    }
+  }
+}
