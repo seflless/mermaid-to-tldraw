@@ -1,0 +1,37 @@
+docs/NATIVE_SHAPES_TEXT_SCALING.md
+  6e60047ff7f2d987 1-95
+packages/mermaid-to-tldraw/src/index.ts
+  6e60047ff7f2d987 2-4,7-9,12-14,25-55
+packages/mermaid-to-tldraw/src/types.ts
+  6e60047ff7f2d987 64-175
+packages/mermaid-to-tldraw/src/converter.ts
+  6e60047ff7f2d987 7-9,178-460
+packages/mermaid-to-tldraw/src/parser.ts
+  6e60047ff7f2d987 6-14,216-517
+apps/demo/src/App.tsx
+  6e60047ff7f2d987 3,7,14-46,66-67,70-74,82-83,122-137
+packages/mermaid-to-tldraw/src/layout.ts
+  6e60047ff7f2d987 6-13,80-242
+apps/demo/src/MermaidShape.tsx
+  6e60047ff7f2d987 27-43,50-66,230-366,370-510,872-873,875-876,892-893
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.40",
+  "base_commit_sha": "fc7156e90ad9dbd11289f2ef007ff6e41299a939",
+  "prompts": {
+    "6e60047ff7f2d987": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "76587ef4-b61c-400c-bed9-95534457fea4",
+        "model": "claude-opus-4-5-20251101"
+      },
+      "human_author": "Francois Laberge <francoislaberge@gmail.com>",
+      "messages": [],
+      "total_additions": 1480,
+      "total_deletions": 98,
+      "accepted_lines": 1398,
+      "overriden_lines": 0
+    }
+  }
+}
