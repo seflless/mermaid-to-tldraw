@@ -127,6 +127,8 @@ export function convertToTldraw(
         fill: 'none',
         color: 'black',
         font: 'draw',
+        text: edge.label || '',
+        labelPosition: 0.75,
       },
     })
 

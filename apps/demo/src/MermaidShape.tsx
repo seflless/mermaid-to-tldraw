@@ -195,6 +195,62 @@ const TLDRAW_MERMAID_CSS = `
 `
 
 /**
+ * Crop SVG viewBox to actual content bounds
+ */
+function cropSvgToContent(svgString: string): { svg: string; width: number; height: number } {
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(svgString, 'image/svg+xml')
+  const svg = doc.querySelector('svg')
+  if (!svg) {
+    return { svg: svgString, width: 400, height: 300 }
+  }
+
+  // Temporarily add to DOM to measure
+  const container = document.createElement('div')
+  container.style.position = 'absolute'
+  container.style.visibility = 'hidden'
+  container.style.pointerEvents = 'none'
+  container.appendChild(svg.cloneNode(true))
+  document.body.appendChild(container)
+
+  const tempSvg = container.querySelector('svg') as SVGSVGElement
+
+  try {
+    // Get the bounding box of all content
+    const bbox = tempSvg.getBBox()
+
+    // Add small padding
+    const padding = 8
+    const x = bbox.x - padding
+    const y = bbox.y - padding
+    const width = bbox.width + padding * 2
+    const height = bbox.height + padding * 2
+
+    // Update the original SVG's viewBox
+    svg.setAttribute('viewBox', `${x} ${y} ${width} ${height}`)
+    svg.setAttribute('width', String(width))
+    svg.setAttribute('height', String(height))
+
+    document.body.removeChild(container)
+
+    return {
+      svg: new XMLSerializer().serializeToString(doc),
+      width,
+      height,
+    }
+  } catch {
+    document.body.removeChild(container)
+    // Fallback to original dimensions
+    const viewBox = svg.getAttribute('viewBox')
+    if (viewBox) {
+      const [, , w, h] = viewBox.split(' ').map(Number)
+      return { svg: svgString, width: w, height: h }
+    }
+    return { svg: svgString, width: 400, height: 300 }
+  }
+}
+
+/**
  * Post-process Mermaid SVG to add TLDraw-style V arrowheads
  */
 function postProcessSvg(svgString: string): string {
@@ -555,41 +611,26 @@ function MermaidRenderer({ shape }: { shape: MermaidShape }) {
           // Post-process SVG to add TLDraw-style arrowheads
           const processedSvg = postProcessSvg(rawSvg)
 
-          // Extract dimensions from SVG
-          const parser = new DOMParser()
-          const doc = parser.parseFromString(processedSvg, 'image/svg+xml')
-          const svgEl = doc.querySelector('svg')
-          let extractedWidth = 400
-          let extractedHeight = 300
-          if (svgEl) {
-            const viewBox = svgEl.getAttribute('viewBox')
-            if (viewBox) {
-              const [, , w, h] = viewBox.split(' ').map(Number)
-              extractedWidth = w
-              extractedHeight = h
-            } else {
-              extractedWidth = parseFloat(svgEl.getAttribute('width') || '400')
-              extractedHeight = parseFloat(svgEl.getAttribute('height') || '300')
-            }
-            setSvgSize({ width: extractedWidth, height: extractedHeight })
+          // Crop to actual content bounds
+          const { svg: croppedSvg, width: extractedWidth, height: extractedHeight } = cropSvgToContent(processedSvg)
+          setSvgSize({ width: extractedWidth, height: extractedHeight })
 
-            // Update aspect ratio and resize to natural size when:
-            // - First render (aspectRatio is null)
-            // - Source code changed (new diagram = new aspect ratio)
-            if (shape.props.aspectRatio === null || sourceChanged) {
-              const newAspectRatio = extractedWidth / extractedHeight
-              editor.updateShape<MermaidShape>({
-                id: shape.id,
-                type: 'mermaid',
-                props: {
-                  aspectRatio: newAspectRatio,
-                  w: extractedWidth,
-                  h: extractedHeight,
-                },
-              })
-            }
+          // Update aspect ratio and resize to natural size when:
+          // - First render (aspectRatio is null)
+          // - Source code changed (new diagram = new aspect ratio)
+          if (shape.props.aspectRatio === null || sourceChanged) {
+            const newAspectRatio = extractedWidth / extractedHeight
+            editor.updateShape<MermaidShape>({
+              id: shape.id,
+              type: 'mermaid',
+              props: {
+                aspectRatio: newAspectRatio,
+                w: extractedWidth,
+                h: extractedHeight,
+              },
+            })
           }
-          setSvg(processedSvg)
+          setSvg(croppedSvg)
           setError(null)
         }
       } catch (e) {
