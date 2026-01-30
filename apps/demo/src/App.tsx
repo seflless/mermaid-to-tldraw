@@ -1,15 +1,49 @@
 import { useState, useCallback, useRef } from 'react'
 import { Tldraw, Editor, TLShapeId } from 'tldraw'
-import { mermaidToTldraw } from 'mermaid-to-tldraw'
+import { autoConvertToTldraw } from 'mermaid-to-tldraw'
 import { MermaidShapeUtil, type MermaidShape } from './MermaidShape'
 import 'tldraw/tldraw.css'
 
-const DEFAULT_MERMAID = `graph TD
+const FLOWCHART_EXAMPLE = `graph TD
     A[Start] --> B{Decision}
     B -->|Yes| C[Do Thing]
     B -->|No| D[Other Thing]
     C --> E[End]
     D --> E`
+
+const SEQUENCE_EXAMPLE = `sequenceDiagram
+    participant Alice
+    participant Bob
+    participant Charlie
+
+    Alice->>+Bob: Hello Bob, how are you?
+    Bob-->>Alice: Hey Alice, I'm good!
+
+    Alice->>Bob: Did you hear about the meeting?
+    Bob->>+Charlie: Hi Charlie, Alice mentioned a meeting
+    Charlie-->>-Bob: Yes, it's at 3pm
+    Bob-->>-Alice: Charlie says it's at 3pm
+
+    Note over Alice,Bob: They agree to attend
+
+    loop Every hour
+        Alice->>Bob: Any updates?
+        Bob-->>Alice: Nothing yet
+    end
+
+    alt Meeting confirmed
+        Alice->>Charlie: See you at 3pm!
+    else Meeting cancelled
+        Alice->>Charlie: Meeting cancelled
+    end
+
+    Alice-xBob: Connection lost
+    Bob-)Charlie: Async notification`
+
+const EXAMPLES = {
+  sequence: SEQUENCE_EXAMPLE,
+  flowchart: FLOWCHART_EXAMPLE,
+}
 
 const customShapeUtils = [MermaidShapeUtil]
 
@@ -29,8 +63,15 @@ function getNextX(editor: Editor, gap = 100): number {
 }
 
 export default function App() {
-  const [mermaidText, setMermaidText] = useState(DEFAULT_MERMAID)
+  const [mermaidText, setMermaidText] = useState(EXAMPLES.sequence)
+  const [selectedExample, setSelectedExample] = useState<keyof typeof EXAMPLES>('sequence')
   const editorRef = useRef<Editor | null>(null)
+
+  const handleExampleChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const example = e.target.value as keyof typeof EXAMPLES
+    setSelectedExample(example)
+    setMermaidText(EXAMPLES[example])
+  }, [])
 
   const handleConvertNative = useCallback(() => {
     const editor = editorRef.current
@@ -38,8 +79,8 @@ export default function App() {
 
     const x = getNextX(editor)
 
-    // Convert mermaid to tldraw shapes
-    mermaidToTldraw(editor, mermaidText, {
+    // Auto-detect diagram type and convert to tldraw shapes
+    autoConvertToTldraw(editor, mermaidText, {
       position: { x, y: 100 },
     })
   }, [mermaidText])
@@ -78,6 +119,22 @@ export default function App() {
         borderRight: '1px solid #e0e0e0',
         background: '#f8f8f8',
       }}>
+        <select
+          value={selectedExample}
+          onChange={handleExampleChange}
+          style={{
+            padding: '8px',
+            fontSize: '13px',
+            fontWeight: 500,
+            border: 'none',
+            borderBottom: '1px solid #e0e0e0',
+            background: '#fff',
+            cursor: 'pointer',
+          }}
+        >
+          <option value="sequence">Sequence Diagram</option>
+          <option value="flowchart">Flowchart</option>
+        </select>
         <textarea
           value={mermaidText}
           onChange={(e) => setMermaidText(e.target.value)}
