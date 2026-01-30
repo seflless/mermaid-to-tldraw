@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   HTMLContainer,
   TLBaseShape,
   TLResizeInfo,
-  resizeBox,
   BaseBoxShapeUtil,
+  useEditor,
 } from 'tldraw'
 import mermaid from 'mermaid'
 
@@ -23,6 +23,7 @@ mermaid.initialize({
     edgeLabelBackground: '#ffffff',
     clusterBkg: '#f5f5f5',
     clusterBorder: '#1d1d1d',
+    fontSize: '24px',
   },
   flowchart: {
     curve: 'basis',
@@ -48,7 +49,7 @@ const TLDRAW_MERMAID_CSS = `
 
   /* Node styling - TLDraw look */
   .mermaid-tldraw .node rect {
-    stroke-width: 2.5px !important;
+    stroke-width: 4.5px !important;
     stroke: #1d1d1d !important;
     fill: #f9f9f9 !important;
     rx: 12px !important;
@@ -57,14 +58,14 @@ const TLDRAW_MERMAID_CSS = `
 
   .mermaid-tldraw .node circle,
   .mermaid-tldraw .node ellipse {
-    stroke-width: 2.5px !important;
+    stroke-width: 4.5px !important;
     stroke: #1d1d1d !important;
     fill: #f9f9f9 !important;
   }
 
   .mermaid-tldraw .node polygon,
   .mermaid-tldraw .node path {
-    stroke-width: 2.5px !important;
+    stroke-width: 4.5px !important;
     stroke: #1d1d1d !important;
     fill: #f9f9f9 !important;
   }
@@ -75,7 +76,7 @@ const TLDRAW_MERMAID_CSS = `
   .mermaid-tldraw path.flowchart-link,
   .mermaid-tldraw .edge-pattern-solid,
   .mermaid-tldraw [class*="edge"] path {
-    stroke-width: 2px !important;
+    stroke-width: 4px !important;
     stroke: #1d1d1d !important;
   }
 
@@ -83,13 +84,14 @@ const TLDRAW_MERMAID_CSS = `
   /* Diamond/rhombus shapes */
   .mermaid-tldraw .node.rhombus polygon,
   .mermaid-tldraw .node polygon {
-    stroke-width: 3.5px !important;
+    stroke-width: 6px !important;
+    stroke-linejoin: round !important;
   }
 
   /* Text styling - bolder and centered */
   .mermaid-tldraw .nodeLabel,
   .mermaid-tldraw .label {
-    font-size: 20px !important;
+    font-size: 24px !important;
     font-weight: 500 !important;
     fill: #1d1d1d !important;
     font-family: 'Shantell Sans', cursive !important;
@@ -127,10 +129,10 @@ const TLDRAW_MERMAID_CSS = `
   }
 
   .mermaid-tldraw .edgeLabel rect {
-    fill: #ffffff !important;
-    stroke: #ffffff !important;
-    stroke-width: 6px !important;
-    opacity: 1 !important;
+    fill: transparent !important;
+    stroke: transparent !important;
+    stroke-width: 0 !important;
+    opacity: 0 !important;
   }
 
   .mermaid-tldraw .edgeLabel span {
@@ -173,7 +175,7 @@ const TLDRAW_MERMAID_CSS = `
   /* Custom V arrowheads */
   .mermaid-tldraw .tldraw-arrowhead {
     stroke: #1d1d1d !important;
-    stroke-width: 2px !important;
+    stroke-width: 4px !important;
     fill: none !important;
     stroke-linecap: round !important;
     stroke-linejoin: round !important;
@@ -464,6 +466,7 @@ export type MermaidShape = TLBaseShape<
     w: number
     h: number
     source: string
+    aspectRatio: number | null
   }
 >
 
@@ -475,6 +478,7 @@ export class MermaidShapeUtil extends BaseBoxShapeUtil<MermaidShape> {
       w: 400,
       h: 300,
       source: 'graph TD\n    A[Start] --> B[End]',
+      aspectRatio: null,
     }
   }
 
@@ -486,8 +490,39 @@ export class MermaidShapeUtil extends BaseBoxShapeUtil<MermaidShape> {
     return true
   }
 
+  override isAspectRatioLocked(shape: MermaidShape) {
+    return shape.props.aspectRatio !== null
+  }
+
   override onResize(shape: MermaidShape, info: TLResizeInfo<MermaidShape>) {
-    return resizeBox(shape, info)
+    const { aspectRatio } = shape.props
+
+    // Calculate new dimensions from the resize
+    let newW = Math.max(1, shape.props.w * info.scaleX)
+    let newH = Math.max(1, shape.props.h * info.scaleY)
+
+    // If we have a locked aspect ratio, constrain to it
+    if (aspectRatio !== null) {
+      // Determine which dimension changed more (in terms of ratio)
+      const wRatio = newW / shape.props.w
+      const hRatio = newH / shape.props.h
+
+      // Use the dimension that changed more as the driver
+      if (Math.abs(wRatio - 1) > Math.abs(hRatio - 1)) {
+        newH = newW / aspectRatio
+      } else {
+        newW = newH * aspectRatio
+      }
+    }
+
+    return {
+      id: shape.id,
+      type: shape.type,
+      props: {
+        w: newW,
+        h: newH,
+      },
+    }
   }
 
   component(shape: MermaidShape) {
@@ -500,12 +535,16 @@ export class MermaidShapeUtil extends BaseBoxShapeUtil<MermaidShape> {
 }
 
 function MermaidRenderer({ shape }: { shape: MermaidShape }) {
+  const editor = useEditor()
   const [svg, setSvg] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
   const [svgSize, setSvgSize] = useState<{ width: number; height: number } | null>(null)
+  const prevSourceRef = useRef<string>(shape.props.source)
 
   useEffect(() => {
     let cancelled = false
+    const sourceChanged = prevSourceRef.current !== shape.props.source
+    prevSourceRef.current = shape.props.source
 
     async function render() {
       try {
@@ -520,15 +559,34 @@ function MermaidRenderer({ shape }: { shape: MermaidShape }) {
           const parser = new DOMParser()
           const doc = parser.parseFromString(processedSvg, 'image/svg+xml')
           const svgEl = doc.querySelector('svg')
+          let extractedWidth = 400
+          let extractedHeight = 300
           if (svgEl) {
             const viewBox = svgEl.getAttribute('viewBox')
             if (viewBox) {
               const [, , w, h] = viewBox.split(' ').map(Number)
-              setSvgSize({ width: w, height: h })
+              extractedWidth = w
+              extractedHeight = h
             } else {
-              const w = parseFloat(svgEl.getAttribute('width') || '400')
-              const h = parseFloat(svgEl.getAttribute('height') || '300')
-              setSvgSize({ width: w, height: h })
+              extractedWidth = parseFloat(svgEl.getAttribute('width') || '400')
+              extractedHeight = parseFloat(svgEl.getAttribute('height') || '300')
+            }
+            setSvgSize({ width: extractedWidth, height: extractedHeight })
+
+            // Update aspect ratio and resize to natural size when:
+            // - First render (aspectRatio is null)
+            // - Source code changed (new diagram = new aspect ratio)
+            if (shape.props.aspectRatio === null || sourceChanged) {
+              const newAspectRatio = extractedWidth / extractedHeight
+              editor.updateShape<MermaidShape>({
+                id: shape.id,
+                type: 'mermaid',
+                props: {
+                  aspectRatio: newAspectRatio,
+                  w: extractedWidth,
+                  h: extractedHeight,
+                },
+              })
             }
           }
           setSvg(processedSvg)
@@ -544,14 +602,13 @@ function MermaidRenderer({ shape }: { shape: MermaidShape }) {
 
     render()
     return () => { cancelled = true }
-  }, [shape.props.source, shape.id])
+  }, [shape.props.source, shape.id, shape.props.aspectRatio, editor])
 
-  // Calculate scale to fit
+  // Calculate scale to fill the container (no cap - fills the space)
   const scale = svgSize
     ? Math.min(
-        (shape.props.w - 20) / svgSize.width,
-        (shape.props.h - 20) / svgSize.height,
-        1 // Don't scale up beyond 1
+        shape.props.w / svgSize.width,
+        shape.props.h / svgSize.height
       )
     : 1
 

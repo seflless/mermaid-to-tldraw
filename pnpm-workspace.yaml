@@ -1,3 +1,16 @@
 packages:
-  - 'packages/*'
-  - 'apps/*'
+  - packages/*
+  - apps/*
+
+onlyBuiltDependencies:
+  - a
+  - c
+  - core-js
+  - d
+  - e
+  - esbuild
+  - f
+  - l
+  - o
+  - r
+  - u
