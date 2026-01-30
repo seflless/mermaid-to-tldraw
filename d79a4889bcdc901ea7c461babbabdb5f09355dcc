@@ -1,0 +1,54 @@
+packages/mermaid-to-tldraw/src/layout.ts
+  6e60047ff7f2d987 6-13,80-242
+packages/mermaid-to-tldraw/src/index.ts
+  6e60047ff7f2d987 2-4,7-9,12-14,25-55
+apps/demo/src/MermaidShape.tsx
+  6e60047ff7f2d987 27-43,50-66,230-366,370-371,373-446,448,450-454,457-459,462-466,468-469,471-489,491-500,503-504,507-508,872,875,891
+  d8ae6f135f6f0ec0 372,447,449,455-456,460-461,467,470,490,501-502,505-506,509-510,873,889,892
+  95e0d7aa1c7edc0e 1,7,26,87,96,103,114,122-123,129,167-170,213,783,795,807-810,812-839,852,856,860-861,905,907
+packages/mermaid-to-tldraw/src/types.ts
+  6e60047ff7f2d987 64-175
+packages/mermaid-to-tldraw/src/parser.ts
+  6e60047ff7f2d987 6-14,216-517
+packages/mermaid-to-tldraw/src/converter.ts
+  d8ae6f135f6f0ec0 138-139
+  95e0d7aa1c7edc0e 89
+  6e60047ff7f2d987 7-9,180-462
+apps/demo/src/App.tsx
+  6e60047ff7f2d987 3,7,14-46,66-67,70-74,82-83,122-137
+docs/NATIVE_SHAPES_TEXT_SCALING.md
+  6e60047ff7f2d987 1-95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.41",
+  "base_commit_sha": "d79a4889bcdc901ea7c461babbabdb5f09355dcc",
+  "prompts": {
+    "95e0d7aa1c7edc0e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "eecf66ba-876a-41e2-8ea3-99e2c7b57d33",
+        "model": "claude-opus-4-5-20251101"
+      },
+      "human_author": "Francois Laberge <francoislaberge@gmail.com>",
+      "messages": [],
+      "total_additions": 98,
+      "total_deletions": 41,
+      "accepted_lines": 56,
+      "overriden_lines": 0
+    },
+    "d8ae6f135f6f0ec0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "570d212d-4e59-4cf3-8899-51371150aede",
+        "model": "claude-opus-4-5-20251101"
+      },
+      "human_author": "Francois Laberge <francoislaberge@gmail.com>",
+      "messages": [],
+      "total_additions": 76,
+      "total_deletions": 33,
+      "accepted_lines": 21,
+      "overriden_lines": 0
+    }
+  }
+}
