@@ -24,11 +24,46 @@ mermaid.initialize({
     clusterBkg: '#f5f5f5',
     clusterBorder: '#1d1d1d',
     fontSize: '24px',
+    // Sequence diagram specific
+    actorBkg: '#f9f9f9',
+    actorBorder: '#1d1d1d',
+    actorTextColor: '#1d1d1d',
+    actorLineColor: '#1d1d1d',
+    signalColor: '#1d1d1d',
+    signalTextColor: '#1d1d1d',
+    labelBoxBkgColor: '#f9f9f9',
+    labelBoxBorderColor: '#1d1d1d',
+    labelTextColor: '#1d1d1d',
+    loopTextColor: '#1d1d1d',
+    noteBkgColor: '#fff5ad',
+    noteBorderColor: '#1d1d1d',
+    noteTextColor: '#1d1d1d',
+    activationBkgColor: '#e3f2fd',
+    activationBorderColor: '#1d1d1d',
+    sequenceNumberColor: '#1d1d1d',
   },
   flowchart: {
     curve: 'basis',
     padding: 20,
     htmlLabels: true,
+  },
+  sequence: {
+    diagramMarginX: 20,
+    diagramMarginY: 20,
+    actorMargin: 80,
+    width: 120,
+    height: 50,
+    boxMargin: 10,
+    boxTextMargin: 5,
+    noteMargin: 10,
+    messageMargin: 40,
+    mirrorActors: false,
+    bottomMarginAdj: 1,
+    useMaxWidth: true,
+    rightAngles: false,
+    showSequenceNumbers: false,
+    wrap: true,
+    wrapPadding: 10,
   },
 })
 
@@ -192,62 +227,285 @@ const TLDRAW_MERMAID_CSS = `
     marker-end: none !important;
     marker-start: none !important;
   }
+
+  /* =====================
+     Sequence Diagram Styles
+     ===================== */
+
+  /* Actor/Participant boxes */
+  .mermaid-tldraw .actor {
+    stroke-width: 4.5px !important;
+    stroke: #1d1d1d !important;
+    fill: #f9f9f9 !important;
+    rx: 12px !important;
+    ry: 12px !important;
+  }
+
+  .mermaid-tldraw .actor-line {
+    stroke: #1d1d1d !important;
+    stroke-width: 2px !important;
+    stroke-dasharray: 8, 4 !important;
+  }
+
+  /* Actor text */
+  .mermaid-tldraw text.actor {
+    fill: #1d1d1d !important;
+    font-size: 20px !important;
+    font-weight: 500 !important;
+    font-family: 'Shantell Sans', cursive !important;
+  }
+
+  /* Message lines */
+  .mermaid-tldraw .messageLine0,
+  .mermaid-tldraw .messageLine1 {
+    stroke-width: 3px !important;
+    stroke: #1d1d1d !important;
+  }
+
+  .mermaid-tldraw .messageLine1 {
+    stroke-dasharray: 8, 4 !important;
+  }
+
+  /* Message text */
+  .mermaid-tldraw .messageText {
+    fill: #1d1d1d !important;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    font-family: 'Shantell Sans', cursive !important;
+  }
+
+  /* Activation boxes */
+  .mermaid-tldraw .activation0,
+  .mermaid-tldraw .activation1,
+  .mermaid-tldraw .activation2 {
+    fill: #e3f2fd !important;
+    stroke: #1d1d1d !important;
+    stroke-width: 2px !important;
+  }
+
+  /* Notes */
+  .mermaid-tldraw .note {
+    fill: #fff5ad !important;
+    stroke: #1d1d1d !important;
+    stroke-width: 2px !important;
+  }
+
+  .mermaid-tldraw .noteText {
+    fill: #1d1d1d !important;
+    font-size: 14px !important;
+    font-family: 'Shantell Sans', cursive !important;
+  }
+
+  /* Loop/Alt/Opt boxes */
+  .mermaid-tldraw .loopLine {
+    stroke: #1d1d1d !important;
+    stroke-width: 2px !important;
+    stroke-dasharray: 8, 4 !important;
+    fill: none !important;
+  }
+
+  .mermaid-tldraw .loopText,
+  .mermaid-tldraw .loopText tspan {
+    fill: #1d1d1d !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    font-family: 'Shantell Sans', cursive !important;
+  }
+
+  .mermaid-tldraw .labelBox {
+    fill: #f5f5f5 !important;
+    stroke: #1d1d1d !important;
+    stroke-width: 2px !important;
+  }
+
+  .mermaid-tldraw .labelText,
+  .mermaid-tldraw .labelText tspan {
+    fill: #1d1d1d !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    font-family: 'Shantell Sans', cursive !important;
+  }
+
+  /* Sequence arrowheads */
+  .mermaid-tldraw .arrowHead {
+    fill: #1d1d1d !important;
+  }
+
+  .mermaid-tldraw #arrowhead,
+  .mermaid-tldraw #crosshead,
+  .mermaid-tldraw #sequencenumber {
+    fill: #1d1d1d !important;
+  }
+
+  /* Cross marker for lost messages */
+  .mermaid-tldraw .cross path {
+    stroke: #1d1d1d !important;
+    stroke-width: 3px !important;
+  }
+
+  /* Sequence number circles */
+  .mermaid-tldraw .sequenceNumber {
+    fill: #1d1d1d !important;
+    font-size: 12px !important;
+    font-family: 'Shantell Sans', cursive !important;
+  }
+
+  /* Critical/break section backgrounds */
+  .mermaid-tldraw rect.rect {
+    fill: rgba(255, 235, 235, 0.3) !important;
+    stroke: #1d1d1d !important;
+    stroke-width: 2px !important;
+    stroke-dasharray: 8, 4 !important;
+  }
+
+  /* Alt/Else divider line */
+  .mermaid-tldraw line.alt-else-line {
+    stroke: #1d1d1d !important;
+    stroke-width: 2px !important;
+    stroke-dasharray: 4, 4 !important;
+  }
 `
 
 /**
- * Crop SVG viewBox to actual content bounds
+ * Compute tight bounding box of all visible elements in an SVG
+ * For sequence diagrams, we exclude lifelines (vertical dashed lines) which extend far below content
+ */
+function computeTightBoundingBox(svg: SVGSVGElement): { minX: number; minY: number; maxX: number; maxY: number } | null {
+  // For sequence diagrams, focus on content elements only (rect, text)
+  // These are the actual content - participant boxes, message labels, notes, fragments
+  // Exclude line/path elements which may include lifelines that extend far below
+  const contentElements = svg.querySelectorAll('rect, text, circle, ellipse, polygon')
+
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+
+  contentElements.forEach(el => {
+    // Skip invisible elements
+    const style = window.getComputedStyle(el as Element)
+    if (style.display === 'none' || style.visibility === 'hidden') return
+
+    // Skip defs, markers, etc.
+    if (el.closest('defs') || el.closest('marker')) return
+
+    try {
+      const bbox = (el as SVGGraphicsElement).getBBox?.()
+      if (bbox && bbox.width > 0 && bbox.height > 0) {
+        minX = Math.min(minX, bbox.x)
+        minY = Math.min(minY, bbox.y)
+        maxX = Math.max(maxX, bbox.x + bbox.width)
+        maxY = Math.max(maxY, bbox.y + bbox.height)
+      }
+    } catch {
+      // getBBox can throw for elements not in DOM
+    }
+  })
+
+  // Also include horizontal lines/paths (message arrows) but not vertical ones (lifelines)
+  const lineElements = svg.querySelectorAll('line, path')
+  lineElements.forEach(el => {
+    const style = window.getComputedStyle(el as Element)
+    if (style.display === 'none' || style.visibility === 'hidden') return
+    if (el.closest('defs') || el.closest('marker')) return
+
+    // For line elements, skip vertical lines (lifelines)
+    if (el.tagName.toLowerCase() === 'line') {
+      const lineEl = el as SVGLineElement
+      const x1 = lineEl.x1?.baseVal?.value ?? 0
+      const x2 = lineEl.x2?.baseVal?.value ?? 0
+      const y1 = lineEl.y1?.baseVal?.value ?? 0
+      const y2 = lineEl.y2?.baseVal?.value ?? 0
+      // Skip vertical lines (lifelines) - same x, different y
+      if (Math.abs(x1 - x2) < 1 && Math.abs(y1 - y2) > 50) return
+    }
+
+    try {
+      const bbox = (el as SVGGraphicsElement).getBBox?.()
+      if (bbox && bbox.width > 0 && bbox.height > 0) {
+        minX = Math.min(minX, bbox.x)
+        minY = Math.min(minY, bbox.y)
+        maxX = Math.max(maxX, bbox.x + bbox.width)
+        maxY = Math.max(maxY, bbox.y + bbox.height)
+      }
+    } catch {
+      // getBBox can throw for elements not in DOM
+    }
+  })
+
+  if (minX === Infinity || minY === Infinity || maxX === -Infinity || maxY === -Infinity) {
+    return null
+  }
+
+  // Add small padding
+  const padding = 8
+  return {
+    minX: minX - padding,
+    minY: minY - padding,
+    maxX: maxX + padding,
+    maxY: maxY + padding,
+  }
+}
+
+/**
+ * Crop SVG to tight bounding box by adjusting viewBox
  */
 function cropSvgToContent(svgString: string): { svg: string; width: number; height: number } {
+  // Create a temporary container to render the SVG and measure it
+  const container = document.createElement('div')
+  container.style.position = 'absolute'
+  container.style.left = '-9999px'
+  container.style.top = '-9999px'
+  container.innerHTML = svgString
+  document.body.appendChild(container)
+
+  const svgEl = container.querySelector('svg')
+  if (!svgEl) {
+    document.body.removeChild(container)
+    return { svg: svgString, width: 400, height: 300 }
+  }
+
+  const bbox = computeTightBoundingBox(svgEl)
+  document.body.removeChild(container)
+
+  if (!bbox) {
+    // Fallback to original viewBox
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(svgString, 'image/svg+xml')
+    const svg = doc.querySelector('svg')
+    if (svg) {
+      const viewBox = svg.getAttribute('viewBox')
+      if (viewBox) {
+        const [, , w, h] = viewBox.split(' ').map(Number)
+        return { svg: svgString, width: w, height: h }
+      }
+      return {
+        svg: svgString,
+        width: parseFloat(svg.getAttribute('width') || '400'),
+        height: parseFloat(svg.getAttribute('height') || '300'),
+      }
+    }
+    return { svg: svgString, width: 400, height: 300 }
+  }
+
+  // Update the SVG with new viewBox
   const parser = new DOMParser()
   const doc = parser.parseFromString(svgString, 'image/svg+xml')
   const svg = doc.querySelector('svg')
-  if (!svg) {
-    return { svg: svgString, width: 400, height: 300 }
-  }
-
-  // Temporarily add to DOM to measure
-  const container = document.createElement('div')
-  container.style.position = 'absolute'
-  container.style.visibility = 'hidden'
-  container.style.pointerEvents = 'none'
-  container.appendChild(svg.cloneNode(true))
-  document.body.appendChild(container)
-
-  const tempSvg = container.querySelector('svg') as SVGSVGElement
-
-  try {
-    // Get the bounding box of all content
-    const bbox = tempSvg.getBBox()
-
-    // Add small padding
-    const padding = 8
-    const x = bbox.x - padding
-    const y = bbox.y - padding
-    const width = bbox.width + padding * 2
-    const height = bbox.height + padding * 2
-
-    // Update the original SVG's viewBox
-    svg.setAttribute('viewBox', `${x} ${y} ${width} ${height}`)
-    svg.setAttribute('width', String(width))
-    svg.setAttribute('height', String(height))
-
-    document.body.removeChild(container)
-
+  if (svg) {
+    const newWidth = bbox.maxX - bbox.minX
+    const newHeight = bbox.maxY - bbox.minY
+    svg.setAttribute('viewBox', `${bbox.minX} ${bbox.minY} ${newWidth} ${newHeight}`)
+    svg.setAttribute('width', `${newWidth}`)
+    svg.setAttribute('height', `${newHeight}`)
     return {
       svg: new XMLSerializer().serializeToString(doc),
-      width,
-      height,
+      width: newWidth,
+      height: newHeight,
     }
-  } catch {
-    document.body.removeChild(container)
-    // Fallback to original dimensions
-    const viewBox = svg.getAttribute('viewBox')
-    if (viewBox) {
-      const [, , w, h] = viewBox.split(' ').map(Number)
-      return { svg: svgString, width: w, height: h }
-    }
-    return { svg: svgString, width: 400, height: 300 }
   }
+
+  return { svg: svgString, width: 400, height: 300 }
 }
 
 /**
@@ -611,10 +869,10 @@ function MermaidRenderer({ shape }: { shape: MermaidShape }) {
           // Post-process SVG to add TLDraw-style arrowheads
           const processedSvg = postProcessSvg(rawSvg)
 
-          // Crop to actual content bounds
+          // Crop SVG to tight bounding box (removes extra padding)
           const { svg: croppedSvg, width: extractedWidth, height: extractedHeight } = cropSvgToContent(processedSvg)
-          setSvgSize({ width: extractedWidth, height: extractedHeight })
 
+          setSvgSize({ width: extractedWidth, height: extractedHeight })
           // Update aspect ratio and resize to natural size when:
           // - First render (aspectRatio is null)
           // - Source code changed (new diagram = new aspect ratio)
@@ -630,6 +888,7 @@ function MermaidRenderer({ shape }: { shape: MermaidShape }) {
               },
             })
           }
+
           setSvg(croppedSvg)
           setError(null)
         }

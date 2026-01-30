@@ -1,5 +1,13 @@
 import type { Editor, TLShapeId, TLGeoShape, TLBindingId } from 'tldraw'
-import type { PositionedGraph, PositionedNode, MermaidNodeShape, MermaidArrowType, MermaidToTldrawOptions } from './types'
+import type {
+  PositionedGraph,
+  PositionedNode,
+  MermaidNodeShape,
+  MermaidArrowType,
+  MermaidToTldrawOptions,
+  PositionedSequenceGraph,
+  SequenceMessageType,
+} from './types'
 
 type TLGeoType = TLGeoShape['props']['geo']
 
@@ -168,4 +176,287 @@ export function convertToTldraw(
   }
 
   editor.createBindings(bindings)
+}
+
+// =====================
+// Sequence Diagram Converter
+// =====================
+
+function getSequenceArrowheadEnd(type: SequenceMessageType): 'arrow' | 'triangle' | 'none' {
+  switch (type) {
+    case 'solid-arrow':
+    case 'dotted-arrow':
+      return 'triangle'
+    case 'solid':
+    case 'dotted':
+      return 'arrow'
+    case 'solid-cross':
+    case 'dotted-cross':
+      return 'none' // We'll add an X marker using a shape
+    case 'solid-open':
+    case 'dotted-open':
+      return 'none'
+    default:
+      return 'arrow'
+  }
+}
+
+function getSequenceArrowDash(type: SequenceMessageType): 'draw' | 'dashed' | 'solid' {
+  switch (type) {
+    case 'dotted':
+    case 'dotted-arrow':
+    case 'dotted-cross':
+    case 'dotted-open':
+      return 'dashed'
+    default:
+      return 'draw'
+  }
+}
+
+export function convertSequenceToTldraw(
+  editor: Editor,
+  graph: PositionedSequenceGraph,
+  options: MermaidToTldrawOptions = {}
+): void {
+  const { position = { x: 0, y: 0 }, scale = 1 } = options
+
+  const participantIdMap = new Map<string, TLShapeId>()
+
+  // Create participant boxes (geo shapes)
+  const participantShapes: Parameters<Editor['createShapes']>[0] = []
+
+  for (const p of graph.participants) {
+    const shapeId = `shape:${crypto.randomUUID()}` as TLShapeId
+    participantIdMap.set(p.id, shapeId)
+
+    // Use 'rectangle' for regular participants, or draw a stick figure for actors
+    const isActor = p.type === 'actor'
+
+    participantShapes.push({
+      id: shapeId,
+      type: 'geo',
+      x: position.x + p.x * scale,
+      y: position.y + p.y * scale,
+      props: {
+        geo: isActor ? 'oval' : 'rectangle',
+        w: p.width * scale,
+        h: p.height * scale,
+        richText: toRichText(p.label),
+        align: 'middle',
+        verticalAlign: 'middle',
+        size: 's',
+        font: 'draw',
+        fill: 'semi',
+        color: 'black',
+      },
+    })
+  }
+
+  editor.createShapes(participantShapes)
+
+  // Create lifelines (vertical lines from participant boxes to bottom)
+  const lifelineShapes: Parameters<Editor['createShapes']>[0] = []
+
+  for (const p of graph.participants) {
+    const shapeId = `shape:${crypto.randomUUID()}` as TLShapeId
+    const startX = position.x + p.lifelineX * scale
+    const startY = position.y + (p.y + p.height) * scale
+    const endY = position.y + p.lifelineEndY * scale
+
+    lifelineShapes.push({
+      id: shapeId,
+      type: 'line',
+      x: startX,
+      y: startY,
+      props: {
+        dash: 'dashed',
+        size: 'm',
+        color: 'grey',
+        points: {
+          a1: { id: 'a1', index: 'a1', x: 0, y: 0 },
+          a2: { id: 'a2', index: 'a2', x: 0, y: endY - startY },
+        },
+      },
+    })
+  }
+
+  editor.createShapes(lifelineShapes)
+
+  // Create activation boxes
+  const activationShapes: Parameters<Editor['createShapes']>[0] = []
+
+  for (const a of graph.activations) {
+    const shapeId = `shape:${crypto.randomUUID()}` as TLShapeId
+
+    activationShapes.push({
+      id: shapeId,
+      type: 'geo',
+      x: position.x + a.x * scale,
+      y: position.y + a.y * scale,
+      props: {
+        geo: 'rectangle',
+        w: a.width * scale,
+        h: a.height * scale,
+        fill: 'solid',
+        color: 'light-blue',
+        size: 's',
+      },
+    })
+  }
+
+  editor.createShapes(activationShapes)
+
+  // Create message arrows
+  const messageShapes: Parameters<Editor['createShapes']>[0] = []
+  const messageLabels: Parameters<Editor['createShapes']>[0] = []
+
+  for (const m of graph.messages) {
+    const shapeId = `shape:${crypto.randomUUID()}` as TLShapeId
+    const startX = position.x + m.fromX * scale
+    const startY = position.y + m.y * scale
+    const endX = position.x + m.toX * scale
+
+    if (m.isSelf) {
+      // Self-message: create a curved arrow (using line with multiple points)
+      const selfWidth = 60 * scale
+      const selfHeight = 30 * scale
+
+      messageShapes.push({
+        id: shapeId,
+        type: 'line',
+        x: startX,
+        y: startY,
+        props: {
+          dash: getSequenceArrowDash(m.type),
+          size: 'm',
+          color: 'black',
+          points: {
+            a1: { id: 'a1', index: 'a1', x: 0, y: 0 },
+            a2: { id: 'a2', index: 'a2', x: selfWidth, y: 0 },
+            a3: { id: 'a3', index: 'a3', x: selfWidth, y: selfHeight },
+            a4: { id: 'a4', index: 'a4', x: 0, y: selfHeight },
+          },
+        },
+      })
+    } else {
+      // Normal message: straight arrow
+      messageShapes.push({
+        id: shapeId,
+        type: 'arrow',
+        x: startX,
+        y: startY,
+        props: {
+          start: { x: 0, y: 0 },
+          end: { x: endX - startX, y: 0 },
+          arrowheadEnd: getSequenceArrowheadEnd(m.type),
+          arrowheadStart: 'none',
+          dash: getSequenceArrowDash(m.type),
+          size: 'm',
+          fill: 'none',
+          color: 'black',
+          font: 'draw',
+        },
+      })
+    }
+
+    // Add message label as text shape above the arrow
+    if (m.label) {
+      const labelId = `shape:${crypto.randomUUID()}` as TLShapeId
+      const labelX = m.isSelf
+        ? startX + 70 * scale
+        : startX + (endX - startX) / 2
+
+      messageLabels.push({
+        id: labelId,
+        type: 'text',
+        x: labelX - (m.label.length * 4) * scale,
+        y: startY - 24 * scale,
+        props: {
+          richText: toRichText(m.label),
+          size: 's',
+          font: 'draw',
+          textAlign: 'middle',
+          color: 'black',
+          autoSize: true,
+        },
+      })
+    }
+  }
+
+  editor.createShapes(messageShapes)
+  editor.createShapes(messageLabels)
+
+  // Create fragment boxes (loop, alt, etc.)
+  const fragmentShapes: Parameters<Editor['createShapes']>[0] = []
+  const fragmentLabels: Parameters<Editor['createShapes']>[0] = []
+
+  for (const f of graph.fragments) {
+    const shapeId = `shape:${crypto.randomUUID()}` as TLShapeId
+
+    // Fragment box
+    fragmentShapes.push({
+      id: shapeId,
+      type: 'geo',
+      x: position.x + f.x * scale,
+      y: position.y + f.y * scale,
+      props: {
+        geo: 'rectangle',
+        w: f.width * scale,
+        h: f.height * scale,
+        fill: 'none',
+        color: 'grey',
+        size: 's',
+        dash: 'dashed',
+      },
+    })
+
+    // Fragment label (type + condition)
+    const labelText = f.label ? `${f.type} [${f.label}]` : f.type
+    const labelId = `shape:${crypto.randomUUID()}` as TLShapeId
+
+    fragmentLabels.push({
+      id: labelId,
+      type: 'text',
+      x: position.x + (f.x + 5) * scale,
+      y: position.y + (f.y + 2) * scale,
+      props: {
+        richText: toRichText(labelText),
+        size: 's',
+        font: 'draw',
+        color: 'grey',
+        autoSize: true,
+      },
+    })
+  }
+
+  editor.createShapes(fragmentShapes)
+  editor.createShapes(fragmentLabels)
+
+  // Create notes (using geo rectangles with yellow fill)
+  const noteShapes: Parameters<Editor['createShapes']>[0] = []
+
+  for (const n of graph.notes) {
+    const shapeId = `shape:${crypto.randomUUID()}` as TLShapeId
+
+    noteShapes.push({
+      id: shapeId,
+      type: 'geo',
+      x: position.x + n.x * scale,
+      y: position.y + n.y * scale,
+      props: {
+        geo: 'rectangle',
+        w: n.width * scale,
+        h: n.height * scale,
+        richText: toRichText(n.text),
+        align: 'start',
+        verticalAlign: 'start',
+        size: 's',
+        font: 'draw',
+        fill: 'solid',
+        color: 'yellow',
+      },
+    })
+  }
+
+  editor.createShapes(noteShapes)
 }
