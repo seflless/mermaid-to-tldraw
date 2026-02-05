@@ -57,7 +57,7 @@ mermaid.initialize({
     boxTextMargin: 5,
     noteMargin: 10,
     messageMargin: 40,
-    mirrorActors: false,
+    mirrorActors: true,
     bottomMarginAdj: 1,
     useMaxWidth: true,
     rightAngles: false,
@@ -367,28 +367,33 @@ const TLDRAW_MERMAID_CSS = `
 `
 
 /**
- * Compute tight bounding box of all visible elements in an SVG
- * For sequence diagrams, we exclude lifelines (vertical dashed lines) which extend far below content
+ * Compute bounding box excluding sequence diagram lifelines
  */
-function computeTightBoundingBox(svg: SVGSVGElement): { minX: number; minY: number; maxX: number; maxY: number } | null {
-  // For sequence diagrams, focus on content elements only (rect, text)
-  // These are the actual content - participant boxes, message labels, notes, fragments
-  // Exclude line/path elements which may include lifelines that extend far below
-  const contentElements = svg.querySelectorAll('rect, text, circle, ellipse, polygon')
+function computeContentBBox(svgEl: SVGSVGElement): { x: number; y: number; width: number; height: number } | null {
+  // Check if this is a sequence diagram by looking for actor-line elements
+  const isSequenceDiagram = svgEl.querySelector('.actor-line') !== null
 
+  if (!isSequenceDiagram) {
+    // For non-sequence diagrams, use the full getBBox
+    try {
+      const bbox = svgEl.getBBox()
+      return { x: bbox.x, y: bbox.y, width: bbox.width, height: bbox.height }
+    } catch {
+      return null
+    }
+  }
+
+  // For sequence diagrams, exclude lifelines (vertical dashed lines)
+  // by only measuring content elements
   let minX = Infinity
   let minY = Infinity
   let maxX = -Infinity
   let maxY = -Infinity
 
+  // Content elements: rects (actors, notes, fragments), text, polygons
+  const contentElements = svgEl.querySelectorAll('rect, text, circle, ellipse, polygon, foreignObject')
   contentElements.forEach(el => {
-    // Skip invisible elements
-    const style = window.getComputedStyle(el as Element)
-    if (style.display === 'none' || style.visibility === 'hidden') return
-
-    // Skip defs, markers, etc.
     if (el.closest('defs') || el.closest('marker')) return
-
     try {
       const bbox = (el as SVGGraphicsElement).getBBox?.()
       if (bbox && bbox.width > 0 && bbox.height > 0) {
@@ -397,26 +402,22 @@ function computeTightBoundingBox(svg: SVGSVGElement): { minX: number; minY: numb
         maxX = Math.max(maxX, bbox.x + bbox.width)
         maxY = Math.max(maxY, bbox.y + bbox.height)
       }
-    } catch {
-      // getBBox can throw for elements not in DOM
-    }
+    } catch { /* ignore */ }
   })
 
-  // Also include horizontal lines/paths (message arrows) but not vertical ones (lifelines)
-  const lineElements = svg.querySelectorAll('line, path')
+  // Include horizontal lines/paths (message arrows) but skip vertical lifelines
+  const lineElements = svgEl.querySelectorAll('line, path')
   lineElements.forEach(el => {
-    const style = window.getComputedStyle(el as Element)
-    if (style.display === 'none' || style.visibility === 'hidden') return
     if (el.closest('defs') || el.closest('marker')) return
 
-    // For line elements, skip vertical lines (lifelines)
+    // Skip vertical lines (lifelines) in sequence diagrams
     if (el.tagName.toLowerCase() === 'line') {
       const lineEl = el as SVGLineElement
       const x1 = lineEl.x1?.baseVal?.value ?? 0
       const x2 = lineEl.x2?.baseVal?.value ?? 0
       const y1 = lineEl.y1?.baseVal?.value ?? 0
       const y2 = lineEl.y2?.baseVal?.value ?? 0
-      // Skip vertical lines (lifelines) - same x, different y
+      // Skip vertical lines (same x, different y by more than 50px)
       if (Math.abs(x1 - x2) < 1 && Math.abs(y1 - y2) > 50) return
     }
 
@@ -428,23 +429,12 @@ function computeTightBoundingBox(svg: SVGSVGElement): { minX: number; minY: numb
         maxX = Math.max(maxX, bbox.x + bbox.width)
         maxY = Math.max(maxY, bbox.y + bbox.height)
       }
-    } catch {
-      // getBBox can throw for elements not in DOM
-    }
+    } catch { /* ignore */ }
   })
 
-  if (minX === Infinity || minY === Infinity || maxX === -Infinity || maxY === -Infinity) {
-    return null
-  }
+  if (minX === Infinity) return null
 
-  // Add small padding
-  const padding = 8
-  return {
-    minX: minX - padding,
-    minY: minY - padding,
-    maxX: maxX + padding,
-    maxY: maxY + padding,
-  }
+  return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
 }
 
 /**
@@ -456,48 +446,50 @@ function cropSvgToContent(svgString: string): { svg: string; width: number; heig
   container.style.position = 'absolute'
   container.style.left = '-9999px'
   container.style.top = '-9999px'
+  container.style.visibility = 'hidden'
   container.innerHTML = svgString
   document.body.appendChild(container)
 
-  const svgEl = container.querySelector('svg')
+  const svgEl = container.querySelector('svg') as SVGSVGElement | null
   if (!svgEl) {
     document.body.removeChild(container)
     return { svg: svgString, width: 400, height: 300 }
   }
 
-  const bbox = computeTightBoundingBox(svgEl)
+  const bbox = computeContentBBox(svgEl)
   document.body.removeChild(container)
 
   if (!bbox) {
-    // Fallback to original viewBox
+    // Fallback: parse the existing viewBox
     const parser = new DOMParser()
     const doc = parser.parseFromString(svgString, 'image/svg+xml')
     const svg = doc.querySelector('svg')
     if (svg) {
       const viewBox = svg.getAttribute('viewBox')
       if (viewBox) {
-        const [, , w, h] = viewBox.split(' ').map(Number)
-        return { svg: svgString, width: w, height: h }
-      }
-      return {
-        svg: svgString,
-        width: parseFloat(svg.getAttribute('width') || '400'),
-        height: parseFloat(svg.getAttribute('height') || '300'),
+        const parts = viewBox.split(/[\s,]+/).map(Number)
+        return { svg: svgString, width: parts[2] || 400, height: parts[3] || 300 }
       }
     }
     return { svg: svgString, width: 400, height: 300 }
   }
+
+  // Add padding around the content
+  const padding = 8
+  const minX = bbox.x - padding
+  const minY = bbox.y - padding
+  const newWidth = bbox.width + padding * 2
+  const newHeight = bbox.height + padding * 2
 
   // Update the SVG with new viewBox
   const parser = new DOMParser()
   const doc = parser.parseFromString(svgString, 'image/svg+xml')
   const svg = doc.querySelector('svg')
   if (svg) {
-    const newWidth = bbox.maxX - bbox.minX
-    const newHeight = bbox.maxY - bbox.minY
-    svg.setAttribute('viewBox', `${bbox.minX} ${bbox.minY} ${newWidth} ${newHeight}`)
-    svg.setAttribute('width', `${newWidth}`)
-    svg.setAttribute('height', `${newHeight}`)
+    svg.setAttribute('viewBox', `${minX} ${minY} ${newWidth} ${newHeight}`)
+    svg.setAttribute('width', '100%')
+    svg.setAttribute('height', '100%')
+    svg.setAttribute('preserveAspectRatio', 'xMinYMin meet')
     return {
       svg: new XMLSerializer().serializeToString(doc),
       width: newWidth,
@@ -852,7 +844,6 @@ function MermaidRenderer({ shape }: { shape: MermaidShape }) {
   const editor = useEditor()
   const [svg, setSvg] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
-  const [svgSize, setSvgSize] = useState<{ width: number; height: number } | null>(null)
   const prevSourceRef = useRef<string>(shape.props.source)
 
   useEffect(() => {
@@ -872,7 +863,6 @@ function MermaidRenderer({ shape }: { shape: MermaidShape }) {
           // Crop SVG to tight bounding box (removes extra padding)
           const { svg: croppedSvg, width: extractedWidth, height: extractedHeight } = cropSvgToContent(processedSvg)
 
-          setSvgSize({ width: extractedWidth, height: extractedHeight })
           // Update aspect ratio and resize to natural size when:
           // - First render (aspectRatio is null)
           // - Source code changed (new diagram = new aspect ratio)
@@ -904,24 +894,13 @@ function MermaidRenderer({ shape }: { shape: MermaidShape }) {
     return () => { cancelled = true }
   }, [shape.props.source, shape.id, shape.props.aspectRatio, editor])
 
-  // Calculate scale to fill the container (no cap - fills the space)
-  const scale = svgSize
-    ? Math.min(
-        shape.props.w / svgSize.width,
-        shape.props.h / svgSize.height
-      )
-    : 1
-
   return (
     <HTMLContainer
       style={{
         width: shape.props.w,
         height: shape.props.h,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
         background: 'transparent',
-        overflow: 'visible',
+        overflow: 'hidden',
         pointerEvents: 'all',
       }}
     >
@@ -935,8 +914,8 @@ function MermaidRenderer({ shape }: { shape: MermaidShape }) {
           className="mermaid-tldraw"
           dangerouslySetInnerHTML={{ __html: svg }}
           style={{
-            transform: `scale(${scale})`,
-            transformOrigin: 'center center',
+            width: '100%',
+            height: '100%',
           }}
         />
       )}
