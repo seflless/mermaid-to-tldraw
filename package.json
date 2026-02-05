@@ -2,7 +2,7 @@
   "name": "mermaid-to-tldraw-monorepo",
   "private": true,
   "scripts": {
-    "dev": "pnpm --filter demo dev",
+    "dev": "pnpm --filter mermaid-to-tldraw build && pnpm --filter demo dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck"
   },
