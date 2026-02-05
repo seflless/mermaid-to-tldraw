@@ -1,0 +1,53 @@
+apps/demo/src/MermaidShape.tsx
+  95e0d7aa1c7edc0e 1,7,26,87,96,103,114,122-123,129,167-170,213,775,787,799-802,804-831,844,847,851-852,895
+  c962b37570dc52ee 60,370,372-374,376-387,393-394,405,408-409,413,420,432,435,437,449,453,459,463,470-471,477-482,489-492,903,917-918
+  d8ae6f135f6f0ec0 371,439,445-446,451-452,458,461,476,493-494,497-498,501-502,864,879,882
+package.json
+  c962b37570dc52ee 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.41",
+  "base_commit_sha": "cc59a41ed954c2d9e04b488fa3d3dc832f2e05a9",
+  "prompts": {
+    "95e0d7aa1c7edc0e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "eecf66ba-876a-41e2-8ea3-99e2c7b57d33",
+        "model": "claude-opus-4-5-20251101"
+      },
+      "human_author": "Francois Laberge <francoislaberge@gmail.com>",
+      "messages": [],
+      "total_additions": 98,
+      "total_deletions": 41,
+      "accepted_lines": 54,
+      "overriden_lines": 0
+    },
+    "c962b37570dc52ee": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bf6e4dfe-29e8-49db-98a9-f5163747b0ad",
+        "model": "claude-opus-4-5-20251101"
+      },
+      "human_author": "Francois Laberge <francoislaberge@gmail.com>",
+      "messages": [],
+      "total_additions": 104,
+      "total_deletions": 125,
+      "accepted_lines": 47,
+      "overriden_lines": 0
+    },
+    "d8ae6f135f6f0ec0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "570d212d-4e59-4cf3-8899-51371150aede",
+        "model": "claude-opus-4-5-20251101"
+      },
+      "human_author": "Francois Laberge <francoislaberge@gmail.com>",
+      "messages": [],
+      "total_additions": 76,
+      "total_deletions": 33,
+      "accepted_lines": 18,
+      "overriden_lines": 0
+    }
+  }
+}
