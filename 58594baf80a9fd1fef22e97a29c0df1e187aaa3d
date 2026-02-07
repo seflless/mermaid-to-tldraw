@@ -1,0 +1,21 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.42",
+  "base_commit_sha": "58594baf80a9fd1fef22e97a29c0df1e187aaa3d",
+  "prompts": {
+    "d1d5912f2c76da6c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "7c46031c-8800-464b-9236-77bdf418fe2e",
+        "model": "composer-1"
+      },
+      "human_author": "Francois Laberge <francoislaberge@gmail.com>",
+      "messages": [],
+      "total_additions": 317,
+      "total_deletions": 38,
+      "accepted_lines": 246,
+      "overriden_lines": 2
+    }
+  }
+}
