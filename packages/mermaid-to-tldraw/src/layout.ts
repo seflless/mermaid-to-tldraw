@@ -35,9 +35,28 @@ export function layoutGraph(editor: Editor, graph: MermaidGraph): PositionedGrap
 
   // Measure nodes using tldraw's text measurement
   for (const node of graph.nodes) {
-    const measured = measureShapeText(editor, node.label, { size: 'm', font: 'draw' })
-    const width = Math.max(MIN_NODE_WIDTH, measured.w)
-    const height = Math.max(MIN_NODE_HEIGHT, measured.h)
+    let measured = measureShapeText(editor, node.label, { size: 'm', font: 'draw' })
+    let width = Math.max(MIN_NODE_WIDTH, measured.w)
+    let height = Math.max(MIN_NODE_HEIGHT, measured.h)
+
+    if (node.shape === 'diamond') {
+      // Constrain text width to force wrapping on long labels,
+      // preventing extremely wide flat diamonds.
+      const maxTextW = 120
+      if (measured.w > maxTextW) {
+        measured = measureShapeText(editor, node.label, { size: 'm', font: 'draw', maxWidth: maxTextW })
+        width = Math.max(MIN_NODE_WIDTH, measured.w)
+        height = Math.max(MIN_NODE_HEIGHT, measured.h)
+      }
+
+      // Diamond text sits inside an inscribed rectangle (W/2 × H/2),
+      // so we need 2× text dimensions. Enforce square proportions
+      // so the diamond isn't flat — use max(w, h) for both sides.
+      const side = Math.max(width, height) * 2
+      width = side
+      height = side
+    }
+
     g.setNode(node.id, { width, height })
   }
 
