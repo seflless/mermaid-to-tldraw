@@ -1,0 +1,23 @@
+packages/mermaid-to-tldraw/src/layout.ts
+  9bde6e9737694e1e 38-59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.8",
+  "base_commit_sha": "0cf1dc53298981422910f6c0501b5fb7dc6d358c",
+  "prompts": {
+    "9bde6e9737694e1e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "761c326c-d2d4-4536-961e-a2904bf85f5d",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Francois Laberge <francoislaberge@gmail.com>",
+      "messages": [],
+      "total_additions": 26,
+      "total_deletions": 7,
+      "accepted_lines": 22,
+      "overriden_lines": 0
+    }
+  }
+}
