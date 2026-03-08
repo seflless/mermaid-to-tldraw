@@ -49,10 +49,8 @@ export function layoutGraph(editor: Editor, graph: MermaidGraph): PositionedGrap
         height = Math.max(MIN_NODE_HEIGHT, measured.h)
       }
 
-      // Diamond text sits inside an inscribed rectangle (W/2 × H/2),
-      // so we need 2× text dimensions. Enforce square proportions
-      // so the diamond isn't flat — use max(w, h) for both sides.
-      const side = Math.max(width, height) * 2
+      // Scale up for diamond geometry and enforce square proportions.
+      const side = Math.max(width, height) * 1.5
       width = side
       height = side
     }
