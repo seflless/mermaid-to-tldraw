@@ -7,6 +7,7 @@ import type { MermaidToTldrawOptions } from './types'
 export { parseMermaid, parseSequenceDiagram, detectDiagramType } from './parser'
 export { layoutGraph, layoutSequenceGraph } from './layout'
 export { convertToTldraw, convertSequenceToTldraw } from './converter'
+export { measureShapeText } from './measure'
 export * from './types'
 
 /**
@@ -19,7 +20,7 @@ export function mermaidToTldraw(
 ): void {
   const graph = parseMermaid(mermaidText)
   console.log('Parsed graph:', JSON.stringify(graph, null, 2))
-  const positionedGraph = layoutGraph(graph)
+  const positionedGraph = layoutGraph(editor, graph)
   convertToTldraw(editor, positionedGraph, options)
 }
 
@@ -33,7 +34,7 @@ export function sequenceToTldraw(
 ): void {
   const graph = parseSequenceDiagram(mermaidText)
   console.log('Parsed sequence graph:', JSON.stringify(graph, null, 2))
-  const positionedGraph = layoutSequenceGraph(graph)
+  const positionedGraph = layoutSequenceGraph(editor, graph)
   convertSequenceToTldraw(editor, positionedGraph, options)
 }
 

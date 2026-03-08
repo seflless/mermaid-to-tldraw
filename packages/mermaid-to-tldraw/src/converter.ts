@@ -8,6 +8,7 @@ import type {
   PositionedSequenceGraph,
   SequenceMessageType,
 } from './types'
+import { measureShapeText } from './measure'
 
 type TLGeoType = TLGeoShape['props']['geo']
 
@@ -282,6 +283,35 @@ export function convertSequenceToTldraw(
 
   editor.createShapes(lifelineShapes)
 
+  // Create bottom participant boxes (mirrored at end of lifelines)
+  const bottomParticipantShapes: Parameters<Editor['createShapes']>[0] = []
+
+  for (const p of graph.participants) {
+    const shapeId = `shape:${crypto.randomUUID()}` as TLShapeId
+    const isActor = p.type === 'actor'
+
+    bottomParticipantShapes.push({
+      id: shapeId,
+      type: 'geo',
+      x: position.x + p.x * scale,
+      y: position.y + p.lifelineEndY * scale,
+      props: {
+        geo: isActor ? 'oval' : 'rectangle',
+        w: p.width * scale,
+        h: p.height * scale,
+        richText: toRichText(p.label),
+        align: 'middle',
+        verticalAlign: 'middle',
+        size: 's',
+        font: 'draw',
+        fill: 'semi',
+        color: 'black',
+      },
+    })
+  }
+
+  editor.createShapes(bottomParticipantShapes)
+
   // Create activation boxes
   const activationShapes: Parameters<Editor['createShapes']>[0] = []
 
@@ -306,7 +336,7 @@ export function convertSequenceToTldraw(
 
   editor.createShapes(activationShapes)
 
-  // Create message arrows
+  // Create message arrows with properly measured labels
   const messageShapes: Parameters<Editor['createShapes']>[0] = []
   const messageLabels: Parameters<Editor['createShapes']>[0] = []
 
@@ -359,25 +389,54 @@ export function convertSequenceToTldraw(
       })
     }
 
-    // Add message label as text shape above the arrow
+    // Add message label as text shape above the arrow — wrap long text
     if (m.label) {
       const labelId = `shape:${crypto.randomUUID()}` as TLShapeId
-      const labelX = m.isSelf
+      const arrowWidth = Math.abs(endX - startX)
+      // Allow labels to be up to 1.5x the arrow width, with a reasonable cap
+      // This lets short labels stay single-line while long ones wrap
+      const maxLabelWidth = Math.min(Math.max(arrowWidth * 1.5, 150) * scale, 300 * scale)
+
+      // Measure with padding: 0 to get raw text dimensions
+      const unconstrained = measureShapeText(editor, m.label, { size: 's', font: 'draw', padding: 0 })
+
+      let labelW: number
+      let labelH: number
+      if (unconstrained.w <= maxLabelWidth) {
+        labelW = unconstrained.w
+        labelH = unconstrained.h
+      } else {
+        const wrapped = measureShapeText(editor, m.label, {
+          size: 's',
+          font: 'draw',
+          maxWidth: maxLabelWidth,
+          padding: 0,
+        })
+        labelW = maxLabelWidth
+        labelH = wrapped.h
+      }
+
+      // Center label horizontally over the arrow midpoint
+      const midX = m.isSelf
         ? startX + 70 * scale
         : startX + (endX - startX) / 2
+      const labelX = midX - (labelW / 2) * scale
+      // Position label just above the arrow with a small gap
+      const labelY = startY - (labelH + 4) * scale
 
       messageLabels.push({
         id: labelId,
         type: 'text',
-        x: labelX - (m.label.length * 4) * scale,
-        y: startY - 24 * scale,
+        x: labelX,
+        y: labelY,
         props: {
           richText: toRichText(m.label),
           size: 's',
           font: 'draw',
           textAlign: 'middle',
           color: 'black',
-          autoSize: true,
+          autoSize: unconstrained.w <= maxLabelWidth,
+          ...(unconstrained.w > maxLabelWidth ? { w: labelW } : {}),
         },
       })
     }
@@ -410,15 +469,15 @@ export function convertSequenceToTldraw(
       },
     })
 
-    // Fragment label (type + condition)
+    // Fragment type label (e.g. "loop", "alt") — top-left corner badge
     const labelText = f.label ? `${f.type} [${f.label}]` : f.type
     const labelId = `shape:${crypto.randomUUID()}` as TLShapeId
 
     fragmentLabels.push({
       id: labelId,
       type: 'text',
-      x: position.x + (f.x + 5) * scale,
-      y: position.y + (f.y + 2) * scale,
+      x: position.x + (f.x + 8) * scale,
+      y: position.y + (f.y + 4) * scale,
       props: {
         richText: toRichText(labelText),
         size: 's',
@@ -427,6 +486,52 @@ export function convertSequenceToTldraw(
         autoSize: true,
       },
     })
+
+    // Add section dividers for alt/else
+    if (f.sections && f.sections.length > 0) {
+      for (const section of f.sections) {
+        // Dashed horizontal line at the section boundary — positioned above the section's first message
+        const sectionMsg = graph.messages[section.startIndex]
+        const sectionY = sectionMsg
+          ? position.y + (sectionMsg.y - 80) * scale
+          : position.y + f.y * scale
+
+        const dividerLineId = `shape:${crypto.randomUUID()}` as TLShapeId
+        fragmentShapes.push({
+          id: dividerLineId,
+          type: 'line',
+          x: position.x + f.x * scale,
+          y: sectionY,
+          props: {
+            dash: 'dashed',
+            size: 's',
+            color: 'grey',
+            points: {
+              a1: { id: 'a1', index: 'a1', x: 0, y: 0 },
+              a2: { id: 'a2', index: 'a2', x: f.width * scale, y: 0 },
+            },
+          },
+        })
+
+        // Section label (e.g. "else")
+        if (section.label) {
+          const sectionLabelId = `shape:${crypto.randomUUID()}` as TLShapeId
+          fragmentLabels.push({
+            id: sectionLabelId,
+            type: 'text',
+            x: position.x + (f.x + 8) * scale,
+            y: sectionY + 4 * scale,
+            props: {
+              richText: toRichText(`[${section.label}]`),
+              size: 's',
+              font: 'draw',
+              color: 'grey',
+              autoSize: true,
+            },
+          })
+        }
+      }
+    }
   }
 
   editor.createShapes(fragmentShapes)
@@ -448,8 +553,8 @@ export function convertSequenceToTldraw(
         w: n.width * scale,
         h: n.height * scale,
         richText: toRichText(n.text),
-        align: 'start',
-        verticalAlign: 'start',
+        align: 'middle',
+        verticalAlign: 'middle',
         size: 's',
         font: 'draw',
         fill: 'solid',
